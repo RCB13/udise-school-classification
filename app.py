@@ -60,7 +60,7 @@ st.markdown("""
         color: white;
     }
 </style>
-""", unsafe_allowed_html=True)
+""", unsafe_allow_html=True)
 
 # Helper function to load model pipeline
 @st.cache_resource
@@ -72,8 +72,8 @@ def load_pipeline():
 
 pipeline = load_pipeline()
 
-st.markdown("<h1 class='main-title'>🏫 UDISE+ School Quality Diagnostics</h1>", unsafe_allowed_html=True)
-st.markdown("<p class='subtitle'>Predictive analytics & policy alignment checks for government schools</p>", unsafe_allowed_html=True)
+st.markdown("<h1 class='main-title'>🏫 UDISE+ School Quality Diagnostics</h1>", unsafe_allow_html=True)
+st.markdown("<p class='subtitle'>Predictive analytics & policy alignment checks for government schools</p>", unsafe_allow_html=True)
 
 if pipeline is None:
     st.error("⚠️ **Model pipeline file not found!**")
@@ -237,10 +237,10 @@ with tab1:
         
         # Display decision results
         if prediction == 0:
-            st.markdown("<div class='status-badge' style='background-color: #10b981;'>✅ STANDARDIZED SCHOOL QUALITY</div>", unsafe_allowed_html=True)
+            st.markdown("<div class='status-badge' style='background-color: #10b981;'>✅ STANDARDIZED SCHOOL QUALITY</div>", unsafe_allow_html=True)
             st.success("The machine learning model predicts this school meets the general government resource standard.")
         else:
-            st.markdown("<div class='status-badge' style='background-color: #f97316;'>⚠️ ODD SCHOOL QUALITY (Vulnerable)</div>", unsafe_allowed_html=True)
+            st.markdown("<div class='status-badge' style='background-color: #f97316;'>⚠️ ODD SCHOOL QUALITY (Vulnerable)</div>", unsafe_allow_html=True)
             st.warning("The machine learning model classifies this school as **Odd** (struggling resource/capacity). Recommended for immediate intervention.")
 
         # Metric cards
@@ -251,21 +251,21 @@ with tab1:
                 <div class='metric-value'>{prob_odd*100:.1f}%</div>
                 <div class='metric-label'>Odd Probability</div>
             </div>
-            """, unsafe_allowed_html=True)
+            """, unsafe_allow_html=True)
         with m_col2:
             st.markdown(f"""
             <div class='metric-card'>
                 <div class='metric-value'>{calc_effectiveness_score:.1f}</div>
                 <div class='metric-label'>Teacher Score (Estimated)</div>
             </div>
-            """, unsafe_allowed_html=True)
+            """, unsafe_allow_html=True)
         with m_col3:
             st.markdown(f"""
             <div class='metric-card'>
                 <div class='metric-value'>{calc_infra_score:.1f}</div>
                 <div class='metric-label'>Infra Score (Estimated)</div>
             </div>
-            """, unsafe_allowed_html=True)
+            """, unsafe_allow_html=True)
             
         # Policy Alignment Diagnosis
         st.markdown("---")
