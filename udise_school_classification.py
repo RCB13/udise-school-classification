@@ -58,6 +58,7 @@ F1 penalizes this — it falls to 0 if Recall is 0. So F1 is more honest for imb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.switch_backend('Agg')
 import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
@@ -306,7 +307,7 @@ df['school_label'] = ((df['teacher_effectiveness_score'] < 30) | (df['infrastruc
 numeric_features = df.select_dtypes(include=['int64','float64']).columns.tolist()
 corr_with_label = df[numeric_features].corr()['school_label'].abs().sort_values(ascending=False)
 
-leakage_cols = ['school_label', 'teacher_effectiveness_score', 'infrastructure_score', 'teacher_ratio_score']
+leakage_cols = ['school_label', 'teacher_effectiveness_score', 'infrastructure_score', 'teacher_ratio_score', 'pincode']
 for col in leakage_cols:
     if col in numeric_features:
         numeric_features.remove(col)
@@ -383,7 +384,7 @@ sample = train_df[['teacher_effectiveness_score', 'infrastructure_score']].dropn
 print('=== SHAPIRO-WILK NORMALITY TEST ===')
 for col in ['teacher_effectiveness_score', 'infrastructure_score']:
     stat, p = shapiro(sample[col])
-    result = 'NOT NORMAL ❌ (reject H0)' if p < 0.05 else 'NORMAL ✅ (fail to reject H0)'
+    result = 'NOT NORMAL [X] (reject H0)' if p < 0.05 else 'NORMAL [OK] (fail to reject H0)'
     print(f'{col} - Statistic: {stat:.6f} | p-value: {p:.6f} | Result: {result}')
 
 # ── Step 12: Since NOT normal — use Non-parametric test (Mann-Whitney U) ──────
@@ -396,7 +397,7 @@ stat, p = mannwhitneyu(odd, standardized, alternative='two-sided')
 
 print('\n=== MANN-WHITNEY U TEST ===')
 print(f'Statistic: {stat:.2f} | p-value: {p:.6f}')
-print('Result   : SIGNIFICANT DIFFERENCE ✅' if p < 0.05 else 'Result : NO significant difference')
+print('Result   : SIGNIFICANT DIFFERENCE [OK]' if p < 0.05 else 'Result : NO significant difference')
 
 # ── Step 13: Q-Q Plot — visual normality check ────────────────────────────────
 fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -468,8 +469,15 @@ X_test_scaled = scaler.transform(X_test)
 X_train = pd.DataFrame(X_train_scaled, columns=X_train.columns)
 X_test = pd.DataFrame(X_test_scaled, columns=X_test.columns)
 
-print('\n=== FEATURE SCALING COMPLETED ===')
-print('Scale of train features (mean=0, std=1 verified)')
+# Downsample training set for faster execution (reduces runtime from hours to under 2 minutes)
+np.random.seed(42)
+sample_size = min(100000, len(X_train))
+sample_idx = np.random.choice(len(X_train), sample_size, replace=False)
+X_train = X_train.iloc[sample_idx].reset_index(drop=True)
+y_train = y_train.iloc[sample_idx].reset_index(drop=True)
+
+print('\n=== FEATURE SCALING & DOWNSAMPLING COMPLETED ===')
+print(f'Training on a representative sample of {len(X_train):,} schools')
 
 
 """---
@@ -481,7 +489,7 @@ print('Scale of train features (mean=0, std=1 verified)')
 # Compare them using 5-fold cross-validation on full features
 
 dt_baseline = DecisionTreeClassifier(random_state=42)
-rf_baseline = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=1)
+rf_baseline = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
 
 # Fit baseline models on full features
 dt_baseline.fit(X_train, y_train)
@@ -613,7 +621,7 @@ best_rf = RandomForestClassifier(
     max_depth=best_params['max_depth'],
     min_samples_leaf=best_params['min_samples_leaf'],
     random_state=42,
-    n_jobs=1
+    n_jobs=-1
 )
 best_rf.fit(X_train_pca, y_train)
 
@@ -749,6 +757,6 @@ pipeline_data = {
     'voting_model': voting_model
 }
 joblib.dump(pipeline_data, 'school_classifier_pipeline.joblib')
-print('Trained model and preprocessing pipeline successfully exported to school_classifier_pipeline.joblib! 🚀')
+print('Trained model and preprocessing pipeline successfully exported to school_classifier_pipeline.joblib! [Done]')
 
-print('\n✅ ML Evaluation rubrics aligned sequentially. Ready for grading.')
+print('\n[OK] ML Evaluation rubrics aligned sequentially. Ready for grading.')

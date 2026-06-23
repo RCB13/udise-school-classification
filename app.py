@@ -301,45 +301,47 @@ with tab3:
         batch_df = pd.read_csv(uploaded_file)
         st.write("Loaded batch dataset:", batch_df.head())
         
-        # Check if required columns are present
+        # Check if required columns are present and fill missing ones dynamically
         missing_cols = [c for c in feature_cols if c not in batch_df.columns]
         if missing_cols:
-            st.error(f"Missing required columns in CSV: {missing_cols}")
-        else:
-            if st.button("Run Batch Prediction"):
-                # Preprocess batch
-                proc_df = batch_df[feature_cols].copy()
-                
-                # Encoding
-                for col in feature_cols:
-                    if col in label_encoders:
-                        le = label_encoders[col]
-                        le_dict = dict(zip(le.classes_, le.transform(le.classes_)))
-                        proc_df[col] = proc_df[col].astype(str).apply(lambda x: le_dict.get(x, -1))
-                
-                # Imputation & Scaling
-                proc_df = proc_df.fillna(train_medians)
-                proc_scaled = scaler.transform(proc_df)
-                
-                # PCA Projection & Prediction
-                proc_pca = pca.transform(proc_scaled)
-                preds = voting_model.predict(proc_pca)
-                probs = voting_model.predict_proba(proc_pca)[:, 1]
-                
-                # Add columns to original dataframe
-                result_df = batch_df.copy()
-                result_df['Predicted_Label'] = preds
-                result_df['Predicted_Odd_Probability'] = probs
-                result_df['Status'] = result_df['Predicted_Label'].map({0: 'Standardized', 1: 'Odd'})
-                
-                st.markdown("### 🎯 Prediction Results")
-                st.write(result_df[['state', 'district', 'total_student_count', 'total_teacher', 'Status', 'Predicted_Odd_Probability']].head(10))
-                
-                # Download CSV button
-                csv_data = result_df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download Predictions as CSV",
-                    data=csv_data,
-                    file_name="school_predictions_output.csv",
-                    mime="text/csv"
-                )
+            for col in missing_cols:
+                batch_df[col] = train_medians[col]
+            st.info(f"ℹ️ **Note:** The following features were missing in the uploaded file and have been automatically filled using representative median values: {missing_cols}")
+            
+        if st.button("Run Batch Prediction"):
+            # Preprocess batch
+            proc_df = batch_df[feature_cols].copy()
+            
+            # Encoding
+            for col in feature_cols:
+                if col in label_encoders:
+                    le = label_encoders[col]
+                    le_dict = dict(zip(le.classes_, le.transform(le.classes_)))
+                    proc_df[col] = proc_df[col].astype(str).apply(lambda x: le_dict.get(x, -1))
+            
+            # Imputation & Scaling
+            proc_df = proc_df.fillna(train_medians)
+            proc_scaled = scaler.transform(proc_df)
+            
+            # PCA Projection & Prediction
+            proc_pca = pca.transform(proc_scaled)
+            preds = voting_model.predict(proc_pca)
+            probs = voting_model.predict_proba(proc_pca)[:, 1]
+            
+            # Add columns to original dataframe
+            result_df = batch_df.copy()
+            result_df['Predicted_Label'] = preds
+            result_df['Predicted_Odd_Probability'] = probs
+            result_df['Status'] = result_df['Predicted_Label'].map({0: 'Standardized', 1: 'Odd'})
+            
+            st.markdown("### 🎯 Prediction Results")
+            st.write(result_df[['state', 'district', 'total_student_count', 'total_teacher', 'Status', 'Predicted_Odd_Probability']].head(10))
+            
+            # Download CSV button
+            csv_data = result_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Predictions as CSV",
+                data=csv_data,
+                file_name="school_predictions_output.csv",
+                mime="text/csv"
+            )
